@@ -1,0 +1,4 @@
+﻿--- STRUCTURED JSON ---
+"{\"name\":\"John Doe\",\"age\":30,\"occupation\":\"Engineer\"}"
+--- RAW TEXT ---
+Sample OCR Text: Name: John Doe, Age: 30, Occupation: Engineer

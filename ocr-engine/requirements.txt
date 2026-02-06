@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart
+opencv-python-headless
+numpy
+pillow
+langchain
+langchain-core
+langchain-openai
+langfuse
+python-dotenv
+groq
+easyocr
+langchain-groq
