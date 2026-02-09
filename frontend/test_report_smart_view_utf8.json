@@ -1,0 +1,167 @@
+﻿{
+  "config": {
+    "configFile": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\playwright.config.js",
+    "rootDir": "C:/Users/aseuro/Desktop/task/frontend/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/aseuro/Desktop/task/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/aseuro/Desktop/task/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 14,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "app.spec.js",
+      "file": "app.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard & Form Extraction",
+          "file": "app.spec.js",
+          "line": 4,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should navigate to results view and verify Smart View",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 585,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('John Doe')\nExpected: visible\nError: strict mode violation: getByText('John Doe') resolved to 2 elements:\n    1) <p class=\"text-gray-300 leading-relaxed text-sm\">This is a medical invoice for patient John Doe coΓÇª</p> aka getByText('This is a medical invoice for')\n    2) <div class=\"text-sm font-medium text-gray-200 border-b border-white/10 pb-1 break-words\">John Doe</div> aka getByText('John Doe', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('John Doe')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('John Doe')\nExpected: visible\nError: strict mode violation: getByText('John Doe') resolved to 2 elements:\n    1) <p class=\"text-gray-300 leading-relaxed text-sm\">This is a medical invoice for patient John Doe coΓÇª</p> aka getByText('This is a medical invoice for')\n    2) <div class=\"text-sm font-medium text-gray-200 border-b border-white/10 pb-1 break-words\">John Doe</div> aka getByText('John Doe', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('John Doe')\u001b[22m\n\n    at C:\\Users\\aseuro\\Desktop\\task\\frontend\\e2e\\app.spec.js:79:50",
+                        "location": {
+                          "file": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\e2e\\app.spec.js",
+                          "column": 50,
+                          "line": 79
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 77 |\u001b[39m\n \u001b[90m 78 |\u001b[39m         \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'heading'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[32m'Patient Information'\u001b[39m }))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 79 |\u001b[39m         \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'John Doe'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 80 |\u001b[39m\n \u001b[90m 81 |\u001b[39m         \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Service Charges'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 82 |\u001b[39m         \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'Consultation'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\e2e\\app.spec.js",
+                            "column": 50,
+                            "line": 79
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('John Doe')\nExpected: visible\nError: strict mode violation: getByText('John Doe') resolved to 2 elements:\n    1) <p class=\"text-gray-300 leading-relaxed text-sm\">This is a medical invoice for patient John Doe coΓÇª</p> aka getByText('This is a medical invoice for')\n    2) <div class=\"text-sm font-medium text-gray-200 border-b border-white/10 pb-1 break-words\">John Doe</div> aka getByText('John Doe', { exact: true })\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('John Doe')\u001b[22m\n\n\n  77 |\n  78 |         await expect(page.getByRole('heading', { name: 'Patient Information' })).toBeVisible();\n> 79 |         await expect(page.getByText('John Doe')).toBeVisible();\n     |                                                  ^\n  80 |\n  81 |         await expect(page.getByText('Service Charges')).toBeVisible();\n  82 |         await expect(page.getByText('Consultation')).toBeVisible();\n    at C:\\Users\\aseuro\\Desktop\\task\\frontend\\e2e\\app.spec.js:79:50"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[Browser Console] [vite] connecting...\n"
+                        },
+                        {
+                          "text": "[Browser Console] [vite] connected.\n"
+                        },
+                        {
+                          "text": "[Browser Console] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-09T09:07:47.147Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\test-results\\app-Dashboard-Form-Extract-2152e--view-and-verify-Smart-View-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\test-results\\app-Dashboard-Form-Extract-2152e--view-and-verify-Smart-View-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\aseuro\\Desktop\\task\\frontend\\e2e\\app.spec.js",
+                        "column": 50,
+                        "line": 79
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "a510cc93a867214a2ea0-99229cf1d7ee3db0c80a",
+              "file": "app.spec.js",
+              "line": 61,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-09T09:07:45.944Z",
+    "duration": 1932.0240000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
+
