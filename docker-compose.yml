@@ -1,53 +1,49 @@
 version: '3.8'
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: form_extraction_db
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: form_extraction
-      MYSQL_USER: formapp
-      MYSQL_PASSWORD: securepassword123
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
   backend:
     build: ./backend
     container_name: form_extraction_backend
+    restart: always
     environment:
-      DB_HOST: db
+      SPRING_PROFILES_ACTIVE: docker
       OCR_ENGINE_URL: http://ocr-engine:8001
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
     ports:
       - "8080:8080"
     volumes:
       - ./backend/uploads:/app/uploads
+      - h2_data:/app/data
     depends_on:
-      - db
       - ocr-engine
 
   ocr-engine:
     build: ./ocr-engine
     container_name: form_extraction_ocr
+    restart: always
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      # Optimizations for low-memory environments (t3.medium)
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     ports:
       - "8001:8001"
 
   frontend:
     build: ./frontend
     container_name: form_extraction_frontend
+    restart: always
     ports:
-      - "3000:3000"
+      - "80:80"
     depends_on:
       - backend
 
 volumes:
-  mysql_data:
+  h2_data:

@@ -113,12 +113,7 @@ export default function HistoryList({ onRowClick, compact, countOnly }) {
                             </div>
 
                             <div className="flex items-center gap-6">
-                                {form.extractionResults && form.extractionResults.confidenceScore && (
-                                    <div className="hidden md:flex flex-col items-end">
-                                        <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Confidence</span>
-                                        <span className="text-sm font-bold text-white">{(form.extractionResults.confidenceScore * 100).toFixed(0)}%</span>
-                                    </div>
-                                )}
+
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={(e) => handleDelete(e, form.id)}

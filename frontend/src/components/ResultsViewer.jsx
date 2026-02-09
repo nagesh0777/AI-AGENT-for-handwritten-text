@@ -3,11 +3,11 @@ import { formService } from '../services/api';
 import { AgGridReact } from 'ag-grid-react';
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { ChevronLeft, FileJson, Table as TableIcon, Download, AlertCircle, Sparkles, Clock, BarChart3, FileText, ImageIcon } from 'lucide-react';
+import { ChevronLeft, FileJson, Table as TableIcon, Download, AlertCircle, Sparkles, Clock, BarChart3, FileText, ImageIcon, LayoutDashboard, Grid, Type, Info } from 'lucide-react';
 
 export default function ResultsViewer({ formId, onBack }) {
     const [result, setResult] = useState(null);
-    const [view, setView] = useState('table'); // table, json, raw
+    const [view, setView] = useState('smart'); // smart, table, json, raw
     const [imageUrl, setImageUrl] = useState(null);
 
     useEffect(() => {
@@ -36,6 +36,17 @@ export default function ResultsViewer({ formId, onBack }) {
         structuredData = { "error": "Invalid format", "raw": String(result.structuredJson) };
     }
 
+    const formatValue = (val) => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') {
+            if (Array.isArray(val)) {
+                return val.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join(', ');
+            }
+            return JSON.stringify(val);
+        }
+        return String(val);
+    };
+
     const getGridData = (data) => {
         const rows = [];
 
@@ -58,7 +69,7 @@ export default function ResultsViewer({ formId, onBack }) {
                         const val = f.field_value || f.value || '';
                         rows.push({
                             field: `[${sectionName}] ${name}`,
-                            value: typeof val === 'object' ? JSON.stringify(val) : String(val),
+                            value: formatValue(val),
                             confidence: f.confidence
                         });
                     });
@@ -72,7 +83,7 @@ export default function ResultsViewer({ formId, onBack }) {
                 if (Array.isArray(values) && values.length > 0) {
                     rows.push({
                         field: `Entity: ${key.replace(/_/g, ' ')}`,
-                        value: values.join(', ')
+                        value: formatValue(values)
                     });
                 }
             });
@@ -81,11 +92,7 @@ export default function ResultsViewer({ formId, onBack }) {
         // 4. Fallback for other fields
         Object.entries(data).forEach(([key, value]) => {
             if (!['document_type', 'summary', 'sections', 'tables', 'key_entities', 'signatures_detected'].includes(key)) {
-                if (typeof value === 'object') {
-                    rows.push({ field: key, value: JSON.stringify(value) });
-                } else {
-                    rows.push({ field: key, value: String(value) });
-                }
+                rows.push({ field: key, value: formatValue(value) });
             }
         });
 
@@ -112,10 +119,105 @@ export default function ResultsViewer({ formId, onBack }) {
         link.click();
     };
 
+    // Helper for Smart View
+    const renderSmartView = () => {
+        const sections = structuredData.sections || structuredData.cleaned_sections || [];
+        const tables = structuredData.tables || [];
+        const hasSections = Array.isArray(sections) && sections.length > 0;
+
+        return (
+            <div className="bg-[#0f172a] h-full overflow-y-auto p-6 custom-scrollbar space-y-8">
+                {/* Top Summary Card */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-blue-500/20 rounded-xl">
+                            <FileText className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <div className="space-y-2 flex-1">
+                            <h3 className="text-lg font-bold text-white tracking-tight">Document Summary</h3>
+                            <p className="text-gray-300 leading-relaxed text-sm">
+                                {structuredData.summary || "No summary available."}
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-gray-400">
+                                    Type: <span className="text-blue-300">{structuredData.document_type || "Unknown"}</span>
+                                </span>
+                                {structuredData.signatures_detected && (
+                                    <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-xs font-medium text-green-400">
+                                        Signed Document
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sections Grid */}
+                {hasSections ? (
+                    <div className="space-y-6">
+                        {sections.map((section, idx) => (
+                            <div key={idx} className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+                                <div className="bg-white/5 px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                                    <h4 className="font-bold text-white flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        {section.section_name || section.title || `Section ${idx + 1}`}
+                                    </h4>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {section.fields && section.fields.length > 0 ? (
+                                        section.fields.map((field, fIdx) => (
+                                            <div key={fIdx} className="group">
+                                                <label className="text-[11px] uppercase tracking-wider font-bold text-gray-500 block mb-1.5 group-hover:text-blue-400 transition-colors">
+                                                    {field.field_name || field.label || field.key}
+                                                </label>
+                                                <div className="text-sm font-medium text-gray-200 border-b border-white/10 pb-1 break-words">
+                                                    {formatValue(field.field_value || field.value) || <span className="text-gray-600 italic">Empty</span>}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-500 italic text-sm col-span-2">No fields detected in this section.</p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-gray-500">
+                        <Info className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>No structured sections found in this document.</p>
+                    </div>
+                )}
+
+                {/* Tables Section */}
+                {tables.length > 0 && (
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <TableIcon className="w-5 h-5 text-blue-400" />
+                            Extracted Tables
+                        </h3>
+                        {tables.map((table, tIdx) => (
+                            <div key={tIdx} className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden p-4">
+                                <div className="mb-3 font-medium text-blue-300 text-sm">{table.table_name || `Table ${tIdx + 1}`}</div>
+                                <div className="ag-theme-quartz-dark h-[200px] rounded-lg">
+                                    <AgGridReact
+                                        rowData={table.rows}
+                                        columnDefs={table.headers.map(h => ({ field: h, headerName: h, flex: 1 }))}
+                                        defaultColDef={{ sortable: true, filter: true, resizable: true }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-8 animate-fade-in">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            {/* Header Section with glassmorphism */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-white/5">
                 <div className="space-y-4">
                     <button
                         onClick={onBack}
@@ -145,133 +247,136 @@ export default function ResultsViewer({ formId, onBack }) {
                 </div>
             </div>
 
-            {/* Analysis Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="glass-card p-4 flex items-center gap-4 border-l-4 border-blue-500">
-                    <div className="p-3 bg-blue-500/10 rounded-xl">
-                        <BarChart3 className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Confidence Score</p>
-                        <p className="text-xl font-bold text-white">{(result.confidenceScore * 100).toFixed(1)}%</p>
-                    </div>
-                </div>
-                <div className="glass-card p-4 flex items-center gap-4 border-l-4 border-purple-500">
+            {/* Analysis Stats (Original, cleaned up) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-purple-500 bg-gradient-to-r from-purple-500/5 to-transparent">
                     <div className="p-3 bg-purple-500/10 rounded-xl">
                         <Sparkles className="w-6 h-6 text-purple-400" />
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Fields Extracted</p>
-                        <p className="text-xl font-bold text-white">{gridData.length}</p>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Fields Extracted</p>
+                        <p className="text-2xl font-black text-white">{gridData.length}</p>
                     </div>
                 </div>
-                <div className="glass-card p-4 flex items-center gap-4 border-l-4 border-orange-500">
+                <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-orange-500 bg-gradient-to-r from-orange-500/5 to-transparent">
                     <div className="p-3 bg-orange-500/10 rounded-xl">
                         <Clock className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Processed On</p>
-                        <p className="text-sm font-bold text-white">{new Date(result.extractedAt).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Processed On</p>
+                        <p className="text-sm font-bold text-white tracking-wide">{new Date(result.extractedAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     </div>
                 </div>
             </div>
 
             {/* Split View Container */}
-            <div className="glass-panel overflow-hidden">
-                <div className="border-b border-white/5 bg-white/[0.02] p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
+            <div className="glass-panel overflow-hidden border border-white/10 shadow-2xl shadow-black/50">
+                {/* Visual View Switcher */}
+                <div className="border-b border-white/10 bg-black/40 p-2 flex items-center justify-between backdrop-blur-md">
+                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
+                        <button
+                            onClick={() => setView('smart')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-300 ${view === 'smart' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Form View
+                        </button>
                         <button
                             onClick={() => setView('table')}
-                            className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors ${view === 'table' ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-300 ${view === 'table' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <TableIcon className="w-4 h-4" />
-                            Data Table
+                            Data Grid
                         </button>
                         <button
                             onClick={() => setView('json')}
-                            className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors ${view === 'json' ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-300 ${view === 'json' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <FileJson className="w-4 h-4" />
-                            JSON Trace
+                            JSON
                         </button>
                         <button
                             onClick={() => setView('raw')}
-                            className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors ${view === 'raw' ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-300 ${view === 'raw' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                         >
                             <FileText className="w-4 h-4" />
-                            Raw Text
+                            Raw
                         </button>
                     </div>
 
                     {result.unclearFields && result.unclearFields !== '[]' && (
-                        <div className="flex items-center gap-2 text-orange-400 text-xs font-bold animate-pulse">
-                            <AlertCircle className="w-4 h-4" />
-                            Review Items Detected
+                        <div className="mr-4 flex items-center gap-2 text-orange-400 text-xs font-bold animate-pulse px-3 py-1.5 bg-orange-500/10 rounded-full border border-orange-500/20">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            Wait, review needed
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-[600px]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-[700px]">
                     {/* Left Panel: Image Viewer */}
-                    <div className="border-r border-white/5 flex flex-col h-full bg-black/20">
-                        <div className="p-3 flex items-center gap-2 bg-white/5 border-b border-white/5">
-                            <ImageIcon className="w-3 h-3 text-gray-500" />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Source Image</span>
+                    <div className="border-r border-white/10 flex flex-col h-full bg-[#050505] relative">
+                        <div className="absolute top-4 left-4 z-10">
+                            <span className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-bold text-white uppercase tracking-widest border border-white/10 flex items-center gap-2">
+                                <ImageIcon className="w-3 h-3" /> Source Document
+                            </span>
                         </div>
-                        <div className="flex-1 relative overflow-hidden group p-4">
+                        <div className="flex-1 relative overflow-hidden group p-8 flex items-center justify-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-100">
+                            {/* Dotted pattern background */}
+                            <div className="absolute inset-0 opacity-10"
+                                style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+                            />
+
                             {imageUrl ? (
                                 <img
                                     src={imageUrl}
                                     alt="Source Form"
-                                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+                                    className="max-w-full max-h-full object-contain shadow-2xl shadow-black rounded-lg transform transition-transform duration-500 hover:scale-[1.02]"
                                 />
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-500 text-sm italic">
-                                    Source image not available
+                                <div className="text-gray-500 text-sm flex flex-col items-center gap-2">
+                                    <ImageIcon className="w-8 h-8 opacity-50" />
+                                    <span>Source image not available</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
                     {/* Right Panel: Data View */}
-                    <div className="flex flex-col h-full overflow-hidden">
-                        {view === 'table' ? (
+                    <div className="flex flex-col h-full overflow-hidden bg-[#0a0a0f]">
+                        {view === 'smart' ? (
+                            renderSmartView()
+                        ) : view === 'table' ? (
                             <div className="flex flex-col h-full overflow-hidden">
                                 <div className="ag-theme-quartz-dark flex-1 w-full">
                                     <AgGridReact
                                         rowData={gridData}
                                         columnDefs={[
-                                            { field: 'field', headerName: 'Property', flex: 1.5, cellStyle: { fontWeight: '600' } },
                                             {
-                                                field: 'value', headerName: 'Extracted Value', flex: 2, cellStyle: (params) => ({
-                                                    color: params.data.confidence === 'low' ? '#f97316' : '#60a5fa',
-                                                    fontWeight: '500'
-                                                })
+                                                field: 'field',
+                                                headerName: 'Field Name',
+                                                flex: 2,
+                                                minWidth: 200,
+                                                cellStyle: { fontWeight: '600', textWrap: 'wrap' },
+                                                autoHeight: true
                                             },
                                             {
-                                                field: 'confidence',
-                                                headerName: 'Confidence',
-                                                width: 120,
-                                                cellRenderer: (params) => {
-                                                    if (!params.value) return null;
-                                                    const colors = {
-                                                        high: 'bg-green-500/10 text-green-500 border-green-500/20',
-                                                        medium: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-                                                        low: 'bg-red-500/10 text-red-500 border-red-500/20'
-                                                    };
-                                                    return (
-                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${colors[params.value] || ''}`}>
-                                                            {params.value}
-                                                        </span>
-                                                    );
-                                                }
+                                                field: 'value',
+                                                headerName: 'Extracted Content',
+                                                flex: 3,
+                                                minWidth: 300,
+                                                cellStyle: (params) => ({
+                                                    color: '#60a5fa',
+                                                    fontWeight: '500',
+                                                    textWrap: 'wrap'
+                                                }),
+                                                autoHeight: true
                                             }
                                         ]}
                                         defaultColDef={{ sortable: true, filter: true, resizable: true }}
                                     />
                                 </div>
                                 {structuredData.tables && structuredData.tables.length > 0 && (
-                                    <div className="border-t border-white/10 bg-[#050510] p-4 space-y-4 max-h-[40%] overflow-auto custom-scrollbar">
+                                    <div className="border-t border-white/10 bg-[#050510] p-4 space-y-4 max-h-[30%] overflow-auto custom-scrollbar">
                                         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                             <TableIcon className="w-3 h-3" />
                                             Extracted Tables
@@ -292,13 +397,13 @@ export default function ResultsViewer({ formId, onBack }) {
                                 )}
                             </div>
                         ) : view === 'json' ? (
-                            <div className="bg-[#050510] h-full overflow-auto p-6 custom-scrollbar font-mono text-sm leading-relaxed">
+                            <div className="bg-[#0b101a] h-full overflow-auto p-6 custom-scrollbar font-mono text-sm leading-relaxed">
                                 <pre className="text-blue-200/80">
                                     {JSON.stringify(structuredData, null, 2)}
                                 </pre>
                             </div>
                         ) : (
-                            <div className="bg-[#050510] h-full overflow-auto p-6 custom-scrollbar font-mono text-sm leading-relaxed whitespace-pre-wrap text-gray-400 italic">
+                            <div className="bg-[#0b101a] h-full overflow-auto p-6 custom-scrollbar font-mono text-sm leading-relaxed whitespace-pre-wrap text-gray-400 italic">
                                 {result.rawText || "No raw text available for this document."}
                             </div>
                         )}
