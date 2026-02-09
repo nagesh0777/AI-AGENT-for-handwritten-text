@@ -52,13 +52,12 @@ class ExtractionAgent:
             image = Image.open(io.BytesIO(image_data))
             image_np = np.array(image)
 
-            # Initialize EasyOCR Reader (loads model only once ideally, but here for safety)
-            # Using 'en' for English. Can be expanded.
-            # verbose=False prevents the progress bar character error on Windows
-            reader = easyocr.Reader(['en'], gpu=False, verbose=False) # GPU=False for reliability on generic envs
+            # Perform Detection using the pre-loaded reader
+            if not hasattr(self, 'reader'):
+                import easyocr
+                self.reader = easyocr.Reader(['en'], gpu=False, verbose=False)
             
-            # Perform Detection
-            results = reader.readtext(image_np)
+            results = self.reader.readtext(image_np)
 
             # Sort results top-to-bottom (primary) and left-to-right (secondary)
             # usage of a tolerance could be better, but simple sort usually works for single column forms
