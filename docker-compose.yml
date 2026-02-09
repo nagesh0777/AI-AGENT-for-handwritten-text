@@ -5,6 +5,11 @@ services:
     build: ./backend
     container_name: form_extraction_backend
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       OCR_ENGINE_URL: http://ocr-engine:8001
@@ -24,13 +29,18 @@ services:
     build: ./ocr-engine
     container_name: form_extraction_ocr
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
-      # Optimizations for low-memory environments (t3.medium)
+      # Optimizations for low-memory environments (t2.medium / t3.small)
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
     ports:
@@ -40,6 +50,11 @@ services:
     build: ./frontend
     container_name: form_extraction_frontend
     restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "80:80"
     depends_on:
