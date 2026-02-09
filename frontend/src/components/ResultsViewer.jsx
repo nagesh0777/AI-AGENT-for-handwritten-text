@@ -36,23 +36,63 @@ export default function ResultsViewer({ formId, onBack }) {
         structuredData = { "error": "Invalid format", "raw": String(result.structuredJson) };
     }
 
-    const flattenObject = (obj, prefix = '') => {
-        return Object.keys(obj).reduce((acc, k) => {
-            const pre = prefix.length ? prefix + '.' : '';
-            if (obj[k] && typeof obj[k] === 'object' && !Array.isArray(obj[k])) {
-                Object.assign(acc, flattenObject(obj[k], pre + k));
-            } else {
-                acc[pre + k] = obj[k];
+    const getGridData = (data) => {
+        const rows = [];
+
+        // 1. Basic properties
+        if (data.document_type) rows.push({ field: 'Document Type', value: data.document_type });
+        if (data.summary) rows.push({ field: 'Summary', value: data.summary });
+        if (typeof data.signatures_detected !== 'undefined') {
+            rows.push({ field: 'Signatures Detected', value: data.signatures_detected ? 'Yes' : 'No' });
+        }
+
+        // 2. Sections (Robust handling for different naming conventions)
+        const sections = data.sections || data.cleaned_sections || [];
+        if (Array.isArray(sections)) {
+            sections.forEach(section => {
+                const sectionName = section.section_name || section.title || 'General';
+                const fields = section.fields || [];
+                if (Array.isArray(fields)) {
+                    fields.forEach(f => {
+                        const name = f.field_name || f.label || f.key || 'Field';
+                        const val = f.field_value || f.value || '';
+                        rows.push({
+                            field: `[${sectionName}] ${name}`,
+                            value: typeof val === 'object' ? JSON.stringify(val) : String(val),
+                            confidence: f.confidence
+                        });
+                    });
+                }
+            });
+        }
+
+        // 3. Key Entities
+        if (data.key_entities) {
+            Object.entries(data.key_entities).forEach(([key, values]) => {
+                if (Array.isArray(values) && values.length > 0) {
+                    rows.push({
+                        field: `Entity: ${key.replace(/_/g, ' ')}`,
+                        value: values.join(', ')
+                    });
+                }
+            });
+        }
+
+        // 4. Fallback for other fields
+        Object.entries(data).forEach(([key, value]) => {
+            if (!['document_type', 'summary', 'sections', 'tables', 'key_entities', 'signatures_detected'].includes(key)) {
+                if (typeof value === 'object') {
+                    rows.push({ field: key, value: JSON.stringify(value) });
+                } else {
+                    rows.push({ field: key, value: String(value) });
+                }
             }
-            return acc;
-        }, {});
+        });
+
+        return rows;
     };
 
-    const flatData = flattenObject(structuredData || {});
-    const gridData = Object.entries(flatData).map(([key, value]) => ({
-        field: key,
-        value: Array.isArray(value) ? JSON.stringify(value) : String(value)
-    }));
+    const gridData = getGridData(structuredData || {});
 
     const downloadJson = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(structuredData, null, 2));
@@ -196,15 +236,60 @@ export default function ResultsViewer({ formId, onBack }) {
                     {/* Right Panel: Data View */}
                     <div className="flex flex-col h-full overflow-hidden">
                         {view === 'table' ? (
-                            <div className="ag-theme-quartz-dark h-full w-full">
-                                <AgGridReact
-                                    rowData={gridData}
-                                    columnDefs={[
-                                        { field: 'field', headerName: 'Property', flex: 1, cellStyle: { fontWeight: '600' } },
-                                        { field: 'value', headerName: 'Extracted Value', flex: 2, cellClass: 'text-blue-400' }
-                                    ]}
-                                    defaultColDef={{ sortable: true, filter: true, resizable: true }}
-                                />
+                            <div className="flex flex-col h-full overflow-hidden">
+                                <div className="ag-theme-quartz-dark flex-1 w-full">
+                                    <AgGridReact
+                                        rowData={gridData}
+                                        columnDefs={[
+                                            { field: 'field', headerName: 'Property', flex: 1.5, cellStyle: { fontWeight: '600' } },
+                                            {
+                                                field: 'value', headerName: 'Extracted Value', flex: 2, cellStyle: (params) => ({
+                                                    color: params.data.confidence === 'low' ? '#f97316' : '#60a5fa',
+                                                    fontWeight: '500'
+                                                })
+                                            },
+                                            {
+                                                field: 'confidence',
+                                                headerName: 'Confidence',
+                                                width: 120,
+                                                cellRenderer: (params) => {
+                                                    if (!params.value) return null;
+                                                    const colors = {
+                                                        high: 'bg-green-500/10 text-green-500 border-green-500/20',
+                                                        medium: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+                                                        low: 'bg-red-500/10 text-red-500 border-red-500/20'
+                                                    };
+                                                    return (
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${colors[params.value] || ''}`}>
+                                                            {params.value}
+                                                        </span>
+                                                    );
+                                                }
+                                            }
+                                        ]}
+                                        defaultColDef={{ sortable: true, filter: true, resizable: true }}
+                                    />
+                                </div>
+                                {structuredData.tables && structuredData.tables.length > 0 && (
+                                    <div className="border-t border-white/10 bg-[#050510] p-4 space-y-4 max-h-[40%] overflow-auto custom-scrollbar">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <TableIcon className="w-3 h-3" />
+                                            Extracted Tables
+                                        </h4>
+                                        {structuredData.tables.map((table, idx) => (
+                                            <div key={idx} className="space-y-2">
+                                                <p className="text-[10px] text-blue-400 font-bold uppercase">{table.table_name || `Table ${idx + 1}`}</p>
+                                                <div className="ag-theme-quartz-dark h-[150px] border border-white/5 rounded-lg overflow-hidden">
+                                                    <AgGridReact
+                                                        rowData={table.rows}
+                                                        columnDefs={table.headers.map(h => ({ field: h, headerName: h, flex: 1 }))}
+                                                        defaultColDef={{ sortable: true, filter: true, resizable: true }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ) : view === 'json' ? (
                             <div className="bg-[#050510] h-full overflow-auto p-6 custom-scrollbar font-mono text-sm leading-relaxed">

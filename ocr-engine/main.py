@@ -87,34 +87,86 @@ class ExtractionAgent:
             }
 
     async def _step_cleaning_normalization(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Step 2: Universal Data Structuring."""
+        """Step 2: Structural Extraction and Table Detection."""
         prompt = f"""
-        ACT AS: Specialized Document Analysis AI.
+        ACT AS: Expert Document Understanding AI.
         
-        CRITICAL INSTRUCTIONS FOR MAXIMUM ACCURACY & COMPLETENESS:
+        TASK: Extract all meaningful information into structured JSON.
         
-        1. **SPATIAL PROCESSING (Top-to-Bottom)**: 
-           - Process the document strictly from top to bottom, left to right.
-           - Group fields logically based on their vertical position.
-           - Do not mix sections. Keep header info at the top, body in the middle, footer at bottom.
+        CORE RULES:
+        1. Do NOT hallucinate.
+        2. Detection: Sections, Tables, Checkboxes, Signatures, Stamps.
+        3. Layout: Support multi-page merging and split lines.
+        
+        OUTPUT: Return JSON with "document_type", "summary", "sections", "tables", "key_entities", and "signatures_detected".
+        
+        INPUT RAW OCR: {json.dumps(raw_data)}
+        """
+        callbacks = [self.handler] if self.handler else []
+        response = await llm.ainvoke([HumanMessage(content=prompt)], config={"callbacks": callbacks})
+        return self._parse_json(response.content)
 
-        2. **TOTAL EXTRACTION (No Omissions)**:
-           - Extract EVERY visible piece of text, including headers, footers, form codes, and instructions.
-           - If a field is blank, include it as null or "unreadable".
-           - Do not summarize. Do not skip "irrelevant" text.
-        
-        3. **ACCURACY**:
-           - Numbers, Dates, IDs: Read digit-by-digit.
-           - Names/Addresses: Preserve exact spelling and capitalization.
-        
-        4. **STRUCTURE**:
-           - Create nested JSON objects for logical sections (e.g., "header", "patient_info", "address", "footer").
-           - Use "unclear_fields" list only for text that is physically illegible.
+    async def _step_validation_cleaning(self, extracted_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Step 3: Expert Validation and Cleaning Pass."""
+        prompt = f"""
+        ACT AS: Expert Document Data Cleaning and Validation AI.
 
-        OUTPUT FORMAT:
-        Return ONLY valid JSON.
-        
-        INPUT: Raw vision results (Sorted Top-to-Bottom): {json.dumps(raw_data)}
+        YOUR GOAL: Produce the most accurate structured data from the provided JSON.
+
+        OUTPUT STRUCTURE:
+        {{
+          "document_type": "string",
+          "summary": "string",
+          "sections": [
+            {{
+              "section_name": "string",
+              "fields": [
+                {{
+                  "field_name": "string",
+                  "field_value": "string",
+                  "confidence": "high | medium | low"
+                }}
+              ]
+            }}
+          ],
+          "tables": [
+            {{
+              "table_name": "string",
+              "headers": [],
+              "rows": []
+            }}
+          ],
+          "key_entities": {{
+            "person_names": [],
+            "organizations": [],
+            "dates": [],
+            "emails": [],
+            "phone_numbers": [],
+            "addresses": [],
+            "id_numbers": [],
+            "amounts": []
+          }},
+          "signatures_detected": true
+        }}
+
+        STRICT RULES:
+        - Use EXACTLY "section_name", "field_name", and "field_value" keys. 
+        - Do NOT use "title", "label", or other variations.
+
+        NORMALIZATION RULES:
+        - Names -> UPPERCASE
+        - Emails -> valid format, no spaces
+        - Phone -> digits only
+        - Dates -> DD/MM/YYYY
+        - Merge multi-line addresses
+        - Separate city, state, ZIP
+        - Amounts -> Fixed decimal format
+
+        VALDIATION:
+        - Ensure value matches field. Closest label wins.
+        - Mark confidence: high | medium | low.
+
+        INPUT DATA: {json.dumps(extracted_json)}
         """
         callbacks = [self.handler] if self.handler else []
         response = await llm.ainvoke([HumanMessage(content=prompt)], config={"callbacks": callbacks})
@@ -164,16 +216,20 @@ class ExtractionAgent:
             raw_results = await self._step_visual_extraction(base64_img)
             workflow_log.append({"step": "2. Visual Extraction", "status": "COMPLETED", "data": raw_results})
             
-            # 3. Cleaning & Normalization
-            final_data = await self._step_cleaning_normalization(raw_results)
-            workflow_log.append({"step": "3. Normalization", "status": "COMPLETED", "data": final_data})
+            # 3. Structural Extraction
+            structural_json = await self._step_cleaning_normalization(raw_results)
+            workflow_log.append({"step": "3. Extraction", "status": "COMPLETED", "data": structural_json})
+            
+            # 4. Expert Validation & Cleaning
+            final_data = await self._step_validation_cleaning(structural_json)
+            workflow_log.append({"step": "4. Validation & Cleaning", "status": "COMPLETED", "data": final_data})
             
             latency = int((time.time() - start_t) * 1000)
             
             return {
                 "status": "success",
                 "filename": filename,
-                "data": final_data.get("extracted_fields", final_data.get("data", final_data)),
+                "data": final_data,
                 "unclear_fields": final_data.get("unclear_fields", []),
                 "confidence_score": final_data.get("confidence_score", 0.9),
                 "raw_text": raw_results.get("visual_context", ""),

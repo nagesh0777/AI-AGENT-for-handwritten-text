@@ -1,7 +1,0 @@
-﻿--- STRUCTURED JSON ---
-{"raw":"```json\n{\n  \"extracted_data\": {\n    \"Name\": \"John Doe\",\n    \"Age\": 30,\n    \"Occupation\": \"Engineer\"\n  },\n  \"unclear_fields\": [],\n  \"confidence_score\": 1.0\n}\n```"}
---- RAW TEXT ---
-HANDWRITTEN FORM DATA
-Name: John Doe
-Age: 30
-Occupation: Engineer
