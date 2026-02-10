@@ -1,0 +1,21 @@
+{
+  "name": "playwright-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:150": "set RUN_MODE=FAIL150 && npx playwright test --reporter=html --output=report_fail_150",
+    "test:10": "set RUN_MODE=FAIL10 && npx playwright test --reporter=html --output=report_fail_10",
+    "test:flaky": "set RUN_MODE=FLAKY && npx playwright test --reporter=html --output=report_flaky_47",
+    "test:pass": "set RUN_MODE=FAIL_NONE && npx playwright test --reporter=html --output=report_all_pass"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.2.2"
+  }
+}

@@ -36,6 +36,11 @@ public class FormController {
     @PostMapping("/upload")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         try {
+            if (file.getContentType() == null ||
+                    (!file.getContentType().startsWith("image/") && !file.getContentType().equals("application/pdf"))) {
+                return ResponseEntity.badRequest().body("Invalid file type. Only images and PDFs are supported.");
+            }
+
             String path = storageService.store(file);
 
             Form form = Form.builder()

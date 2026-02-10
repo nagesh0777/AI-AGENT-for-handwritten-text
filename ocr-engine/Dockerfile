@@ -5,6 +5,7 @@ WORKDIR /app
 # Using opencv-python-headless to avoid system library dependencies.
 # If easyocr still needs something, we'll see it in runtime logs.
 COPY requirements.txt .
+RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

@@ -5,12 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --bg-dark: #050510;
-  --panel-dark: #0f111a;
+  --bg-dark: #020205;
+  --panel-dark: #0a0b14;
   --accent-blue: #3b82f6;
   --accent-purple: #8b5cf6;
+  --accent-cyan: #06b6d4;
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #64748b;
+  --glass-bg: rgba(15, 17, 26, 0.6);
+  --glow-blue: rgba(59, 130, 246, 0.4);
+  --glow-purple: rgba(139, 92, 246, 0.4);
 }
 
 body {
@@ -20,33 +24,44 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-dark);
   color: var(--text-primary);
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.03) 0%, transparent 70%),
+    var(--bg-dark);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Glassmorphism Classes */
 .glass-panel {
-  background: rgba(15, 17, 26, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.5rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(59, 130, 246, 0.2);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+.glow-text-blue {
+  text-shadow: 0 0 20px var(--glow-blue);
+}
+
+.glow-text-purple {
+  text-shadow: 0 0 20px var(--glow-purple);
 }
 
 /* Custom Scrollbar */

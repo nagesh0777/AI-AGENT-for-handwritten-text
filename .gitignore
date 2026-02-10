@@ -33,3 +33,18 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Project Specific
+backend/uploads/
+.agent/
+.gemini/
+.idea/
+.vscode/
+*.png
+*.webp
+*.jpg
+*.jpeg
+report/
+playwright-report/
+test-results/
+agent.pem

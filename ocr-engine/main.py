@@ -13,17 +13,35 @@ from typing import List, Dict, Any, Optional
 
 load_dotenv()
 
+# Explicitly set Langfuse environment variables for SDK recognition
+os.environ["LANGFUSE_PUBLIC_KEY"] = os.getenv("LANGFUSE_PUBLIC_KEY", "")
+os.environ["LANGFUSE_SECRET_KEY"] = os.getenv("LANGFUSE_SECRET_KEY", "")
+os.environ["LANGFUSE_HOST"] = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import PromptTemplate
+from langfuse.langchain import CallbackHandler
 import re
+from pdf2image import convert_from_bytes
 
 app = FastAPI(title="Agentic Pro Handwritten Extraction")
 
 # Global Config
-# Shared LLM - Using Groq (Llama 3.3 70B for maximum accuracy)
 GROQ_MODEL = "llama-3.3-70b-versatile"
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Initialize Langfuse Handler (reads from environment variables)
+try:
+    langfuse_handler = CallbackHandler()
+    logger.info(f"Langfuse initialized with Public Key prefix: {os.environ['LANGFUSE_PUBLIC_KEY'][:10]}")
+except Exception as e:
+    logger.error(f"Failed to initialize Langfuse CallbackHandler: {e}")
+    langfuse_handler = None
 
 llm = ChatGroq(
     model=GROQ_MODEL,
@@ -127,7 +145,9 @@ class ExtractionAgent:
         """
         
         try:
-            response = self.llm.invoke(prompt_text)
+            # Use the handler if available
+            callbacks = [self.handler] if self.handler else []
+            response = self.llm.invoke(prompt_text, config={"callbacks": callbacks})
             # Extract content from LangChain message
             if hasattr(response, 'content'):
                 response_text = response.content
@@ -313,14 +333,34 @@ class ExtractionAgent:
                 "steps": workflow_log
             }
 
-agent = ExtractionAgent(None)
+agent = ExtractionAgent(langfuse_handler)
 
 @app.post("/process")
 async def process_form(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image files (JPEG, PNG) are supported.")
+    print(f"INFO: Received file {file.filename} with content_type: {file.content_type}")
+    if not file.content_type.startswith("image/") and "pdf" not in file.content_type.lower():
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.content_type}. Only images and PDFs are supported.")
         
     contents = await file.read()
+    
+    # Handle PDF conversion
+    if "pdf" in file.content_type.lower():
+        print(f"INFO: Converting PDF {file.filename} to image...")
+        try:
+            images = convert_from_bytes(contents)
+            if not images:
+                raise HTTPException(status_code=500, detail="Failed to convert PDF: No images generated")
+            
+            # Use the first page for extraction (consistent with current single-image logic)
+            img_byte_arr = io.BytesIO()
+            images[0].save(img_byte_arr, format='JPEG')
+            contents = img_byte_arr.getvalue()
+            print("INFO: PDF successfully converted to image.")
+        except Exception as e:
+            print(f"ERROR: PDF Conversion failed: {str(e)}")
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
+
     result = await agent.process(contents, file.filename)
     
     if result["status"] == "error":

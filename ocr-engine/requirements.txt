@@ -7,8 +7,9 @@ pillow
 langchain
 langchain-core
 langchain-openai
-langfuse
+langfuse[langchain]
 python-dotenv
 groq
 easyocr
 langchain-groq
+pdf2image
